@@ -1,0 +1,29 @@
+name: Set package visibility
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        description: "Comma-separated list of package names to set public (e.g. frpc,frps)"
+        required: true
+        type: string
+
+jobs:
+  set-visibility:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Set packages to public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IFS=',' read -ra PKGS <<< "${{ inputs.packages }}"
+          for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)  # trim whitespace
+            echo "Setting $pkg to public..."
+            gh api --method PUT \
+              -H "Accept: application/vnd.github+json" \
+              /orgs/${{ github.repository_owner }}/packages/container/${pkg}/visibility \
+              -f visibility=public || echo "Warning: failed to set $pkg to public"
+          done
