@@ -7,6 +7,12 @@ on:
         description: "Comma-separated list of package names to set public (e.g. frpc,frps)"
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: "Comma-separated list of package names to set public (e.g. frpc,frps)"
+        required: true
+        type: string
 
 jobs:
   set-visibility:
