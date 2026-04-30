@@ -1,0 +1,65 @@
+name: Build rembg image
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model to pre-download (e.g. u2net, birefnet-general). Leave empty for u2net."
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve model
+        id: model
+        run: |
+          MODEL="${{ inputs.model }}"
+          if [ -z "$MODEL" ]; then
+            MODEL="u2net"
+          fi
+          echo "model=${MODEL}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./rembg
+          file: ./rembg/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            MODEL=${{ steps.model.outputs.model }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/rembg:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/rembg:${{ steps.model.outputs.model }}
+
+  set-visibility:
+    needs: build
+    uses: ./.github/workflows/set-visibility.yml
+    with:
+      packages: "rembg"

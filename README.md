@@ -7,6 +7,7 @@
 | 项目 | 镜像 | 说明 | 构建方式 | 架构 |
 |:-----|:-----|:-----|:---------|:-----|
 | [frp](https://github.com/fatedier/frp) | `ghcr.io/ybbapp/frpc`<br>`ghcr.io/ybbapp/frps` | 内网穿透客户端 / 服务端 | Release 二进制 | `amd64`, `arm64` |
+| [rembg](https://github.com/danielgatis/rembg) | `ghcr.io/ybbapp/rembg` | AI 背景移除 | PyPI 安装 | `amd64`, `arm64` |
 
 ## 构建方式
 
