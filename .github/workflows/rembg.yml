@@ -60,6 +60,8 @@ jobs:
 
   set-visibility:
     needs: build
+    permissions:
+      packages: write
     uses: ./.github/workflows/set-visibility.yml
     with:
       packages: "rembg"
