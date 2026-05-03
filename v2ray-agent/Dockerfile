@@ -49,8 +49,15 @@ RUN mkdir -p \
     /var/log/v2ray-agent \
     /root/.acme.sh
 
-# 复制项目文件
-COPY . /opt/v2ray-agent
+RUN wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/install.sh && \
+    wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/shell/install_en.sh && \
+    wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/shell/init_tls.sh && \
+    mkdir -p /opt/v2ray-agent && \
+    mv /tmp/install.sh /opt/v2ray-agent/ && \
+    mkdir -p /opt/v2ray-agent/shell && \
+    mv /tmp/install_en.sh /opt/v2ray-agent/shell/ && \
+    mv /tmp/init_tls.sh /opt/v2ray-agent/shell/
+
 WORKDIR /opt/v2ray-agent
 
 # 设置脚本权限
