@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  v2ray-agent:
+    build: .
+    container_name: v2ray-agent
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "10000-30000:10000-30000"
+    environment:
+      # 必需配置
+      - DOMAIN=your-domain.com
+      - EMAIL=your-email@example.com
+      
+      # 可选配置
+      - PORT=443
+      - PROTOCOLS=0,1,2,3,4,5,6,7,8,9,10,11,12,13,20
+      - CUSTOM_PATH=
+      - UUID=
+      - HYSTERIA_PORT=
+      - HYSTERIA_DOWNLOAD_SPEED=100
+      - HYSTERIA_UPLOAD_SPEED=50
+      - TUIC_PORT=
+      - DNS_API_TYPE=
+      - CF_API_TOKEN=
+      - ALI_KEY=
+      - ALI_SECRET=
+      - SSL_TYPE=zerossl
+      - TZ=Asia/Shanghai
+    volumes:
+      # 证书持久化
+      - ./data/tls:/etc/v2ray-agent/tls
+      # 配置持久化
+      - ./data/xray:/etc/v2ray-agent/xray
+      - ./data/sing-box:/etc/v2ray-agent/sing-box
+      # 订阅链接持久化
+      - ./data/subscribe:/etc/v2ray-agent/subscribe_local
+      # Nginx配置
+      - ./data/nginx:/etc/nginx/conf.d
+      # acme.sh配置
+      - ./data/acme:/root/.acme.sh
+      # 日志
+      - ./data/logs:/var/log/v2ray-agent
+    networks:
+      - proxy-network
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      - net.core.rmem_max=2500000
+      - net.core.wmem_max=2500000
+
+networks:
+  proxy-network:
+    driver: bridge
