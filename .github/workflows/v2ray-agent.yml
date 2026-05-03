@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -57,3 +58,20 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Set package visibility to public
+        if: github.event_name != 'pull_request'
+        run: |
+          PACKAGE_NAME="v2ray-agent"
+          OWNER="${{ github.repository_owner }}"
+          
+          gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${OWNER}/packages/container/${PACKAGE_NAME}/versions/visibility" \
+            -F visibility=public 2>/dev/null || \
+          gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/users/${OWNER}/packages/container/${PACKAGE_NAME}/versions/visibility" \
+            -F visibility=public 2>/dev/null || true
