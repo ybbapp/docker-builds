@@ -3,105 +3,36 @@
 ## 概述
 将 v2ray-agent 项目 Docker 化，支持通过环境变量配置所有安装参数，实现一键部署。
 
-## 文件结构
-```
-v2ray-agent/
-├── Dockerfile              # Docker 镜像构建文件
-├── docker-compose.yml      # Docker Compose 配置文件
-├── docker-env.sh          # 环境变量配置脚本
-└── data/                  # 持久化数据目录（自动创建）
-```
+## 镜像
 
-## 快速开始
+| 架构 | 镜像 |
+|:-----|:-----|
+| amd64 | `ghcr.io/ybbapp/v2ray-agent:latest` |
+| arm64 | `ghcr.io/ybbapp/v2ray-agent:latest` |
 
-### 1. 配置环境变量
-创建 `.env` 文件：
+## 快速开始（使用预构建镜像）
+
+### 1. 创建数据目录
 ```bash
+mkdir -p data/{tls,xray,sing-box,subscribe,nginx,acme,logs}
+```
+
+### 2. 创建 .env 配置文件
+```bash
+cat > .env << EOF
 DOMAIN=your-domain.com
 EMAIL=your-email@example.com
 PORT=443
 PROTOCOLS=0,1,2,3,4,5,6,7,8,9,10,11,12,13,20
+EOF
 ```
 
-### 2. 构建并启动
+### 3. 启动容器
 ```bash
-# 创建数据目录
-mkdir -p data/{tls,xray,sing-box,subscribe,nginx,acme,logs}
-
-# 构建镜像
-docker-compose build
-
-# 启动容器
-docker-compose up -d
-```
-
-### 3. 查看日志
-```bash
-docker-compose logs -f
-```
-
-## 环境变量说明
-
-### 必需配置
-- `DOMAIN`: 你的域名（如 example.com）
-- `EMAIL`: SSL 证书邮箱
-
-### 可选配置
-- `PORT`: 主端口，默认 443
-- `PROTOCOLS`: 协议选择，逗号分隔，默认全选
-  - 0: VLESS+TCP+TLS Vision
-  - 1: VLESS+WS+TLS
-  - 2: Trojan+gRPC+TLS
-  - 3: VMess+WS+TLS
-  - 4: Trojan+TCP+TLS
-  - 5: VLESS+gRPC+TLS
-  - 6: Hysteria2
-  - 7: VLESS+Reality+Vision
-  - 8: VLESS+Reality+gRPC
-  - 9: Tuic
-  - 10: NaiveProxy
-  - 11: VMess+HTTPUpgrade+TLS
-  - 12: VLESS+Reality+XHTTP
-  - 13: AnyTLS
-  - 20: Socks5
-- `CUSTOM_PATH`: 自定义路径，留空则随机生成
-- `UUID`: 自定义 UUID，留空则随机生成
-- `HYSTERIA_PORT`: Hysteria2 端口
-- `HYSTERIA_DOWNLOAD_SPEED`: 下行速度（Mbps），默认 100
-- `HYSTERIA_UPLOAD_SPEED`: 上行速度（Mbps），默认 50
-- `TUIC_PORT`: Tuic 端口
-- `DNS_API_TYPE`: DNS API 类型（cf/ali）
-- `CF_API_TOKEN`: Cloudflare API Token
-- `ALI_KEY`: 阿里云 AccessKey
-- `ALI_SECRET`: 阿里云 AccessSecret
-- `SSL_TYPE`: SSL 证书类型，默认 zerossl
-
-## 持久化数据
-所有配置和证书都通过 volume 持久化：
-- `./data/tls`: TLS 证书
-- `./data/xray`: Xray 配置
-- `./data/sing-box`: sing-box 配置
-- `./data/subscribe`: 订阅链接
-- `./data/nginx`: Nginx 配置
-- `./data/acme`: acme.sh 配置
-- `./data/logs`: 日志文件
-
-## 端口映射
-- 80: HTTP 端口（证书申请）
-- 443: HTTPS 端口（主服务）
-- 10000-30000: 协议端口范围
-
-## 手动安装（不使用 Docker Compose）
-```bash
-# 构建镜像
-docker build -t v2ray-agent .
-
-# 运行容器
 docker run -d \
   --name v2ray-agent \
-  -p 80:80 \
-  -p 443:443 \
-  -p 10000-30000:10000-30000 \
+  --restart unless-stopped \
+  -p 80:80 -p 443:443 -p 10000-30000:10000-30000 \
   -e DOMAIN=your-domain.com \
   -e EMAIL=your-email@example.com \
   -v $(pwd)/data/tls:/etc/v2ray-agent/tls \
@@ -113,28 +44,126 @@ docker run -d \
   -v $(pwd)/data/logs:/var/log/v2ray-agent \
   --cap-add=NET_ADMIN \
   --cap-add=NET_RAW \
-  --restart unless-stopped \
-  v2ray-agent
+  ghcr.io/ybbapp/v2ray-agent:latest
 ```
 
-## 注意事项
-1. 确保域名 DNS 解析到服务器 IP
-2. 首次启动需要申请证书，可能需要几分钟
-3. 证书申请需要 80 端口可访问
-4. 使用 DNS API 可避免 80 端口依赖
-5. 容器需要 NET_ADMIN 和 NET_RAW 权限
+### 4. 查看日志
+```bash
+docker logs -f v2ray-agent
+```
+
+## 使用 Docker Compose
+
+### 1. 创建配置文件
+```bash
+mkdir -p data/{tls,xray,sing-box,subscribe,nginx,acme,logs}
+
+cat > docker-compose.yml << 'EOF'
+services:
+  v2ray-agent:
+    image: ghcr.io/ybbapp/v2ray-agent:latest
+    container_name: v2ray-agent
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "10000-30000:10000-30000"
+    environment:
+      - DOMAIN=your-domain.com
+      - EMAIL=your-email@example.com
+      - PORT=443
+      - PROTOCOLS=0,1,2,3,4,5,6,7,8,9,10,11,12,13,20
+    volumes:
+      - ./data/tls:/etc/v2ray-agent/tls
+      - ./data/xray:/etc/v2ray-agent/xray
+      - ./data/sing-box:/etc/v2ray-agent/sing-box
+      - ./data/subscribe:/etc/v2ray-agent/subscribe_local
+      - ./data/nginx:/etc/nginx/conf.d
+      - ./data/acme:/root/.acme.sh
+      - ./data/logs:/var/log/v2ray-agent
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+EOF
+```
+
+### 2. 启动
+```bash
+docker-compose up -d
+```
+
+## 环境变量
+
+### 必需
+| 变量 | 说明 | 示例 |
+|:-----|:-----|:-----|
+| `DOMAIN` | 你的域名 | `example.com` |
+| `EMAIL` | SSL 证书邮箱 | `admin@example.com` |
+
+### 可选
+| 变量 | 默认值 | 说明 |
+|:-----|:-------|:-----|
+| `PORT` | 443 | 主端口 |
+| `PROTOCOLS` | 0-13,20 | 协议编号，逗号分隔 |
+| `CUSTOM_PATH` | 随机 | 自定义路径 |
+| `UUID` | 随机 | 自定义 UUID |
+| `HYSTERIA_PORT` | 随机 | Hysteria2 端口 |
+| `HYSTERIA_DOWNLOAD_SPEED` | 100 | 下行速度（Mbps） |
+| `HYSTERIA_UPLOAD_SPEED` | 50 | 上行速度（Mbps） |
+| `TUIC_PORT` | 随机 | Tuic 端口 |
+| `DNS_API_TYPE` | - | DNS API（cf/ali） |
+| `CF_API_TOKEN` | - | Cloudflare API Token |
+| `ALI_KEY` | - | 阿里云 AccessKey |
+| `ALI_SECRET` | - | 阿里云 AccessSecret |
+| `SSL_TYPE` | zerossl | SSL 证书类型 |
+
+### 协议编号
+| 编号 | 协议 |
+|:-----|:-----|
+| 0 | VLESS+TCP+TLS Vision |
+| 1 | VLESS+WS+TLS |
+| 2 | Trojan+gRPC+TLS |
+| 3 | VMess+WS+TLS |
+| 4 | Trojan+TCP+TLS |
+| 5 | VLESS+gRPC+TLS |
+| 6 | Hysteria2 |
+| 7 | VLESS+Reality+Vision |
+| 8 | VLESS+Reality+gRPC |
+| 9 | Tuic |
+| 10 | NaiveProxy |
+| 11 | VMess+HTTPUpgrade+TLS |
+| 12 | VLESS+Reality+XHTTP |
+| 13 | AnyTLS |
+| 20 | Socks5 |
+
+## 数据持久化
+| 路径 | 说明 |
+|:-----|:-----|
+| `./data/tls` | TLS 证书 |
+| `./data/xray` | Xray 配置 |
+| `./data/sing-box` | sing-box 配置 |
+| `./data/subscribe` | 订阅链接 |
+| `./data/nginx` | Nginx 配置 |
+| `./data/acme` | acme.sh 配置 |
+| `./data/logs` | 日志文件 |
+
+## 端口
+| 端口 | 用途 |
+|:-----|:-----|
+| 80 | HTTP（证书申请） |
+| 443 | HTTPS（主服务） |
+| 10000-30000 | 协议端口 |
 
 ## 故障排除
 ```bash
-# 查看容器状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs
-
-# 进入容器
-docker-compose exec v2ray-agent bash
-
-# 重启容器
-docker-compose restart
+docker logs -f v2ray-agent
+docker exec -it v2ray-agent bash
+docker restart v2ray-agent
 ```
+
+## 注意事项
+1. 域名 DNS 需解析到服务器 IP
+2. 首次启动需申请证书，约需 1-2 分钟
+3. 证书申请需 80 端口可访问（DNS API 可免）
+4. 容器需要 NET_ADMIN 和 NET_RAW 权限
