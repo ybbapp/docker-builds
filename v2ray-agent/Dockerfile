@@ -49,14 +49,17 @@ RUN mkdir -p \
     /var/log/v2ray-agent \
     /root/.acme.sh
 
-RUN wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/install.sh && \
-    wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/shell/install_en.sh && \
-    wget -P /tmp https://raw.githubusercontent.com/mack-a/v2ray-agent/master/shell/init_tls.sh && \
-    mkdir -p /opt/v2ray-agent && \
-    mv /tmp/install.sh /opt/v2ray-agent/ && \
-    mkdir -p /opt/v2ray-agent/shell && \
-    mv /tmp/install_en.sh /opt/v2ray-agent/shell/ && \
-    mv /tmp/init_tls.sh /opt/v2ray-agent/shell/
+ARG V2RAY_AGENT_REF=v3.3.12
+RUN set -eux; \
+    base_url="https://raw.githubusercontent.com/mack-a/v2ray-agent"; \
+    ref="${V2RAY_AGENT_REF}"; \
+    curl -fsSL --retry 3 --retry-delay 2 "${base_url}/${ref}/install.sh" -o /tmp/install.sh; \
+    curl -fsSL --retry 3 --retry-delay 2 "${base_url}/${ref}/shell/install_en.sh" -o /tmp/install_en.sh; \
+    curl -fsSL --retry 3 --retry-delay 2 "${base_url}/${ref}/shell/init_tls.sh" -o /tmp/init_tls.sh; \
+    mkdir -p /opt/v2ray-agent/shell; \
+    mv /tmp/install.sh /opt/v2ray-agent/install.sh; \
+    mv /tmp/install_en.sh /opt/v2ray-agent/shell/install_en.sh; \
+    mv /tmp/init_tls.sh /opt/v2ray-agent/shell/init_tls.sh
 
 WORKDIR /opt/v2ray-agent
 

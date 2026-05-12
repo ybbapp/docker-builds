@@ -10,10 +10,69 @@ on:
     paths:
       - 'v2ray-agent/**'
   workflow_dispatch:
+    inputs:
+      version:
+        description: "v2ray-agent version to build (e.g. 3.3.12). Leave empty to auto-detect latest release."
+        required: false
+        type: string
 
 jobs:
-  build:
+  resolve-version:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      ref: ${{ steps.version.outputs.ref }}
+      is_latest: ${{ steps.version.outputs.is_latest }}
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+      - name: Resolve v2ray-agent release version
+        id: version
+        run: |
+          set -euo pipefail
+          INPUT_VERSION="${{ inputs.version }}"
+          LATEST_TAG="$(curl -fsSL https://api.github.com/repos/mack-a/v2ray-agent/releases/latest | jq -r '.tag_name')"
+          if [ -z "${INPUT_VERSION}" ]; then
+            VERSION="${LATEST_TAG#v}"
+            REF="${LATEST_TAG}"
+            IS_LATEST="true"
+          else
+            VERSION="${INPUT_VERSION#v}"
+            REF="v${VERSION}"
+            if [ "${REF}" = "${LATEST_TAG}" ]; then
+              IS_LATEST="true"
+            else
+              IS_LATEST="false"
+            fi
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+          echo "is_latest=${IS_LATEST}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version=${VERSION}, ref=${REF}, is_latest=${IS_LATEST}"
+
+      - name: Compose image tags
+        id: tags
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${{ github.repository_owner }}/v2ray-agent"
+          VERSION="${{ steps.version.outputs.version }}"
+          IS_LATEST="${{ steps.version.outputs.is_latest }}"
+          TAGS="${IMAGE}:${VERSION}"
+          if [ "${IS_LATEST}" = "true" ]; then
+            TAGS="${TAGS}"$'\n'"${IMAGE}:latest"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       packages: write
@@ -36,26 +95,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/v2ray-agent
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ./v2ray-agent
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            V2RAY_AGENT_REF=${{ needs.resolve-version.outputs.ref }}
+          tags: ${{ needs.resolve-version.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
