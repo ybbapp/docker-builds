@@ -1,0 +1,44 @@
+name: Check upstream release
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+
+env:
+  REPO: SagerNet/sing-box
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest upstream version
+        id: upstream
+        run: |
+          set -euo pipefail
+          VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Latest upstream: ${VERSION}"
+
+      - name: Check if release already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.upstream.outputs.version }}"
+          if gh release view "${TAG}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version ${TAG} detected."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger build
+        if: steps.check.outputs.should_build == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build.yml \
+            --repo "${{ github.repository }}" \
+            -f version="${{ steps.upstream.outputs.version }}"
