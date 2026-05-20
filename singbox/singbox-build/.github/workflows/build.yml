@@ -143,12 +143,27 @@ jobs:
         run: |
           TAG="${{ needs.resolve-version.outputs.tag }}"
           VERSION="${{ needs.resolve-version.outputs.version }}"
+          REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
           gh release create "${TAG}" release/* \
-            --repo "${{ github.repository }}" \
+            --repo "${REPO}" \
             --title "sing-box ${TAG}" \
             --notes "sing-box v${VERSION} with \`with_v2ray_api\` enabled.
 
-          Build tags:
+          ## Install
+
+          \`\`\`bash
+          curl -fsSL ${BASE_URL}/sing-box-linux-\$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar -xz -C /usr/local/bin/
+          \`\`\`
+
+          or
+
+          \`\`\`bash
+          wget -qO- ${BASE_URL}/sing-box-linux-\$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar -xz -C /usr/local/bin/
+          \`\`\`
+
+          ## Build Tags
+
           \`\`\`
           ${TAGS}
           \`\`\`
