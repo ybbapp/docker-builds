@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="v${{ steps.version.outputs.version }}"
-          if [ -n "${{ inputs.version }}" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -138,7 +138,7 @@ jobs:
           sha256sum * > checksums.txt
 
       - name: Delete existing release if manual trigger
-        if: inputs.version != ''
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
