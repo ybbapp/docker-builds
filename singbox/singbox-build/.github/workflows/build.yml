@@ -78,6 +78,11 @@ jobs:
           git clone --depth 1 --branch "v${{ needs.resolve-version.outputs.version }}" \
             "https://github.com/${REPO}.git" sing-box
 
+      - name: Install cross-strip tools
+        if: matrix.goarch == 'arm64'
+        run: |
+          sudo apt-get update && sudo apt-get install -y binutils-aarch64-linux-gnu
+
       - name: Build static binary
         env:
           CGO_ENABLED: "0"
@@ -89,14 +94,28 @@ jobs:
           go build -trimpath \
             -tags "${TAGS}" \
             -ldflags "-s -w -checklinkname=0 -X 'internal/godebug.defaultGODEBUG=multipathtcp=0' -X github.com/sagernet/sing-box/constant.Version=${VERSION}" \
-            -o "sing-box-${GOOS}-${GOARCH}" \
+            -o sing-box \
             ./cmd/sing-box
+
+      - name: Strip binary
+        working-directory: sing-box
+        run: |
+          if [ "${{ matrix.goarch }}" = "arm64" ]; then
+            aarch64-linux-gnu-strip sing-box
+          else
+            strip sing-box
+          fi
+
+      - name: Package tarball
+        working-directory: sing-box
+        run: |
+          tar -czf "sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" sing-box
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: sing-box/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: sing-box/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
 
   release:
     needs: [resolve-version, build]
@@ -112,9 +131,8 @@ jobs:
           set -euo pipefail
           mkdir -p release
           for dir in artifacts/*/; do
-            file=$(find "$dir" -type f)
+            file=$(find "$dir" -type f -name "*.tar.gz")
             cp "$file" release/
-            chmod +x "release/$(basename "$file")"
           done
           cd release
           sha256sum * > checksums.txt
