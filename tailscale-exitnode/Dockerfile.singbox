@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+
+FROM ghcr.io/sagernet/sing-box:latest AS singbox
+
+FROM tailscale/tailscale:latest
+
+ARG DEV_TOOLS=false
+
+RUN if [ "${DEV_TOOLS}" = "true" ]; then \
+      apk add --no-cache curl bind-tools iputils busybox-extras tcpdump; \
+    fi
+
+COPY --from=singbox /usr/local/bin/sing-box /usr/local/bin/sing-box
+COPY clash-exporter.sh /usr/local/bin/clash-exporter
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/clash-exporter
+
+ENV NETWORK_KERNEL=singbox
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

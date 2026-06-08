@@ -1,0 +1,43 @@
+services:
+  tailscale-exitnode:
+    image: ghcr.io/ybbapp/tailscale-exitnode:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.singbox
+      args:
+        DEV_TOOLS: "false"
+    container_name: tailscale-exitnode
+    hostname: ${TS_HOSTNAME:-tailscale-exitnode}
+    privileged: true
+    restart: always
+    env_file:
+      - .env.example
+    environment:
+      TS_AUTH_ONCE: true
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: true
+      TS_ACCEPT_DNS: false
+      NETWORK_KERNEL: ${NETWORK_KERNEL:-singbox}
+      SINGBOX_CONFIG: /etc/sing-box/config.jsonc
+      MIHOMO_CONFIG: /etc/mihomo/config.yaml
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
+    volumes:
+      - ./sing-box:/etc/sing-box:ro
+      - ./mihomo:/etc/mihomo:ro
+      - ./tailscale:/var/lib/tailscale
+      - /etc/machine-id:/etc/machine-id:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    ports:
+      - "41641:41641/udp"
+      # Enable the matching exporter port when Prometheus needs to scrape it.
+      # - "2112:2112/tcp"
+      # - "9113:9113/tcp"
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+      - net.ipv6.conf.lo.disable_ipv6=1

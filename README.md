@@ -9,6 +9,7 @@
 | [frp](https://github.com/fatedier/frp) | `ghcr.io/ybbapp/frpc`<br>`ghcr.io/ybbapp/frps` | 内网穿透客户端 / 服务端 | Release 二进制 | `amd64`, `arm64` |
 | [rembg](https://github.com/danielgatis/rembg) | `ghcr.io/ybbapp/rembg` | AI 背景移除 | PyPI 安装 | `amd64`, `arm64` |
 | [sing-box](https://github.com/SagerNet/sing-box) | `ghcr.io/ybbapp/sing-box` | 通用代理平台（含 V2Ray API） | Source 编译 | `amd64`, `arm64` |
+| [tailscale-exitnode](./tailscale-exitnode) | `ghcr.io/ybbapp/tailscale-exitnode` | sing-box + Tailscale exit node | 官方镜像组合 | `amd64`, `arm64` |
 | [v2ray-agent](https://github.com/mack-a/v2ray-agent) | `ghcr.io/ybbapp/v2ray-agent` | Xray/sing-box 一键脚本 | Source 编译 | `amd64`, `arm64` |
 
 ## 构建方式

@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+
+FROM metacubex/mihomo:latest AS mihomo
+
+FROM tailscale/tailscale:latest
+
+ARG DEV_TOOLS=false
+
+RUN if [ "${DEV_TOOLS}" = "true" ]; then \
+      apk add --no-cache curl bind-tools iputils busybox-extras tcpdump; \
+    fi
+
+COPY --from=mihomo /mihomo /usr/local/bin/mihomo
+COPY nginx-exporter.sh /usr/local/bin/nginx-exporter
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/nginx-exporter
+
+ENV NETWORK_KERNEL=mihomo
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

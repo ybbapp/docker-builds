@@ -12,3 +12,12 @@ Thumbs.db
 # Build artifacts
 tmp/
 *.tar.gz
+
+# Local environment files
+.env
+**/.env
+
+# tailscale-exitnode local runtime/config files
+tailscale-exitnode/tailscale/
+tailscale-exitnode/sing-box/
+tailscale-exitnode/mihomo/
