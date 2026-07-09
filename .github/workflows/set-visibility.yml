@@ -31,21 +31,22 @@ jobs:
 
             package_url="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/pkgs/container/${pkg}"
 
-            echo "Setting $pkg to public..."
-            if gh api --method PUT \
-              -H "Accept: application/vnd.github+json" \
-              /orgs/${{ github.repository_owner }}/packages/container/${pkg}/visibility \
-              -f visibility=public; then
-              echo "$pkg visibility set to public via API."
+            echo "Checking $pkg visibility..."
+            if curl -fsSI "$package_url" >/dev/null; then
+              echo "$pkg is already publicly accessible at $package_url"
               continue
             fi
 
-            # GitHub currently returns 404 for repository-scoped GHCR packages on
-            # this endpoint even when the package page is already public. Treat a
-            # publicly accessible package page as success to avoid false warnings.
+            echo "$pkg is not publicly accessible yet; setting it to public via GitHub API..."
+            gh api --method PUT \
+              -H "Accept: application/vnd.github+json" \
+              /orgs/${{ github.repository_owner }}/packages/container/${pkg}/visibility \
+              -f visibility=public
+
             if curl -fsSI "$package_url" >/dev/null; then
-              echo "$pkg is publicly accessible at $package_url"
+              echo "$pkg visibility set to public and verified at $package_url"
             else
-              echo "::warning::Failed to set $pkg public and public page is not accessible: $package_url"
+              echo "::error::GitHub API call completed, but public package page is still not accessible: $package_url"
+              exit 1
             fi
           done
