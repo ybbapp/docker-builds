@@ -27,9 +27,25 @@ jobs:
           IFS=',' read -ra PKGS <<< "${{ inputs.packages }}"
           for pkg in "${PKGS[@]}"; do
             pkg=$(echo "$pkg" | xargs)  # trim whitespace
+            [ -n "$pkg" ] || continue
+
+            package_url="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/pkgs/container/${pkg}"
+
             echo "Setting $pkg to public..."
-            gh api --method PUT \
+            if gh api --method PUT \
               -H "Accept: application/vnd.github+json" \
               /orgs/${{ github.repository_owner }}/packages/container/${pkg}/visibility \
-              -f visibility=public || echo "Warning: failed to set $pkg to public"
+              -f visibility=public; then
+              echo "$pkg visibility set to public via API."
+              continue
+            fi
+
+            # GitHub currently returns 404 for repository-scoped GHCR packages on
+            # this endpoint even when the package page is already public. Treat a
+            # publicly accessible package page as success to avoid false warnings.
+            if curl -fsSI "$package_url" >/dev/null; then
+              echo "$pkg is publicly accessible at $package_url"
+            else
+              echo "::warning::Failed to set $pkg public and public page is not accessible: $package_url"
+            fi
           done
