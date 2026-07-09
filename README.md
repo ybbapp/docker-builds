@@ -11,6 +11,7 @@
 | [sing-box](https://github.com/SagerNet/sing-box) | `ghcr.io/ybbapp/sing-box` | 通用代理平台（含 V2Ray API） | Source 编译 | `amd64`, `arm64` |
 | [systemd](./systemd) | `ghcr.io/ybbapp/systemd:debian`<br>`ghcr.io/ybbapp/systemd:alpine` | 容器化 init 系统 (systemd / OpenRC) | 官方镜像组合 | `amd64`, `arm64` |
 | [tailscale-exitnode](./tailscale-exitnode) | `ghcr.io/ybbapp/tailscale-exitnode` | sing-box + Tailscale exit node | 官方镜像组合 | `amd64`, `arm64` |
+| [unbound-python](./unbound-python) | `ghcr.io/ybbapp/unbound-python` | Python + libunbound 绑定 | apt 安装 | `amd64`, `arm64` |
 | [v2ray-agent](https://github.com/mack-a/v2ray-agent) | `ghcr.io/ybbapp/v2ray-agent` | Xray/sing-box 一键脚本 | Source 编译 | `amd64`, `arm64` |
 
 ## 构建方式
