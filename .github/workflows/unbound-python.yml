@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       debian_version:
-        description: "Debian version tag (default: bookworm)"
+        description: "Debian version tag (default: trixie)"
+        required: false
+        type: string
+      unbound_version:
+        description: "Unbound version or upstream tag (e.g. 1.25.1 or release-1.25.1). Leave empty to auto-detect latest upstream tag."
         required: false
         type: string
 
@@ -41,9 +45,35 @@ jobs:
         run: |
           DEBIAN_VERSION="${{ inputs.debian_version }}"
           if [ -z "$DEBIAN_VERSION" ]; then
-            DEBIAN_VERSION="bookworm"
+            DEBIAN_VERSION="trixie"
           fi
           echo "version=${DEBIAN_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Unbound version
+        id: unbound
+        run: |
+          set -euo pipefail
+          UNBOUND_INPUT="${{ inputs.unbound_version }}"
+
+          if [ -z "$UNBOUND_INPUT" ]; then
+            UNBOUND_TAG=$(git ls-remote --tags --refs https://github.com/NLnetLabs/unbound.git 'release-*' \
+              | awk -F/ '{print $NF}' \
+              | grep -E '^release-[0-9]+\.[0-9]+\.[0-9]+$' \
+              | sed 's/^release-//' \
+              | sort -V \
+              | tail -n 1)
+            if [ -z "$UNBOUND_TAG" ]; then
+              echo "Failed to resolve latest Unbound upstream tag" >&2
+              exit 1
+            fi
+            UNBOUND_VERSION="$UNBOUND_TAG"
+          else
+            UNBOUND_VERSION="${UNBOUND_INPUT#release-}"
+          fi
+
+          echo "version=${UNBOUND_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=release-${UNBOUND_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved Unbound version: ${UNBOUND_VERSION}"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -54,9 +84,11 @@ jobs:
           push: true
           build-args: |
             DEBIAN_VERSION=${{ steps.debian.outputs.version }}
+            UNBOUND_VERSION=${{ steps.unbound.outputs.version }}
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound-python:latest
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound-python:${{ steps.debian.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound-python:${{ steps.unbound.outputs.version }}
 
   set-visibility:
     needs: build
