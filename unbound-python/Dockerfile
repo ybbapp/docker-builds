@@ -46,18 +46,21 @@ RUN apt-get update && \
     make -j"$(nproc)" && \
     make install && \
     ldconfig && \
-    useradd --system --home /var/lib/unbound --shell /usr/sbin/nologin unbound && \
-    mkdir -p /etc/unbound/python /etc/unbound/unbound.conf.d /var/lib/unbound /run/unbound && \
-    chown -R unbound:unbound /var/lib/unbound /run/unbound /etc/unbound/python && \
+    useradd --system --home /var/unbound --shell /usr/sbin/nologin unbound && \
+    mkdir -p /etc/unbound/python /etc/unbound/unbound.conf.d /etc/unbound/custom.conf.d /var/lib/unbound /var/unbound /run/unbound && \
+    cp /usr/share/dns/root.hints /var/unbound/root.hints && \
+    touch /var/unbound/root.key && \
+    chown -R unbound:unbound /var/lib/unbound /var/unbound /run/unbound /etc/unbound/python && \
     cd / && \
     rm -rf /tmp/unbound.tar.gz /tmp/unbound-src /var/lib/apt/lists/*
 
 COPY unbound.conf /etc/unbound/unbound.conf
 COPY noop.py /etc/unbound/python/noop.py
+COPY block_aaaa_https.py /etc/unbound/python/block_aaaa_https.py
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh && \
-    chown unbound:unbound /etc/unbound/python/noop.py && \
+    chown unbound:unbound /etc/unbound/python/noop.py /etc/unbound/python/block_aaaa_https.py && \
     python3 -c "import unbound; print('pyunbound ok')" && \
     test -f /usr/local/lib/python3.13/dist-packages/unboundmodule.py && \
     unbound -V 2>&1 | tee /tmp/unbound-version.txt && \

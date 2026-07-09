@@ -6,12 +6,16 @@
 
 ```yaml
 server:
-  module-config: "cachedb iterator python"
+  module-config: "python cachedb iterator"
+  so-rcvbuf: 0
+  so-sndbuf: 0
 python:
-  python-script: "/etc/unbound/python/noop.py"
+  python-script: "/etc/unbound/python/block_aaaa_https.py"
 ```
 
-> 说明：`cachedb iterator python` 不是 `unbound-checkconf` 白名单里的组合，但 Debian trixie 的 Unbound daemon 已编译 `cachedb`、`iterator`、`python`，并可以在安装 `python3-unbound` 后启动该模块栈。本镜像在构建和运行 smoke test 中验证 daemon 路径，而不是只依赖 `unbound-checkconf`。
+默认 Python 模块会对 `AAAA` 和 `HTTPS` 查询返回 `NOERROR` 空答案（NODATA），保留 `A` 等其他记录正常解析。
+
+> 说明：`python cachedb iterator` 让 Python 模块在缓存和上游解析前执行，便于默认策略拦截指定 RR type。本镜像在构建和运行 smoke test 中验证 daemon 路径，而不是只依赖 `unbound-checkconf`。
 
 ## 镜像
 
@@ -53,7 +57,7 @@ python:
   python-script: "/etc/unbound/python/module.py"
 ```
 
-也可以直接挂载完整配置覆盖 `/etc/unbound/unbound.conf`。
+也兼容 `klutchell/unbound` 的配置目录约定，可以挂载到 `/etc/unbound/custom.conf.d`。也可以直接挂载完整配置覆盖 `/etc/unbound/unbound.conf`。
 
 ## 默认配置
 
@@ -62,10 +66,13 @@ python:
 - 监听 `0.0.0.0:53` 和 `[::]:53`
 - 允许容器网络访问（`access-control: 0.0.0.0/0 allow`、`::0/0 allow`）
 - 禁用 chroot（`chroot: ""`），便于读取容器内挂载的配置、root hints 和 Python 脚本
-- 使用 `/usr/share/dns/root.hints` 和 `/var/lib/unbound/root.key`
-- `module-config: "cachedb iterator python"`
-- `python-script: "/etc/unbound/python/noop.py"`
+- 使用兼容 `klutchell/unbound` 的 `/var/unbound/root.hints` 和 `/var/unbound/root.key`
+- `so-rcvbuf: 0`、`so-sndbuf: 0`，使用系统默认 socket buffer，避免容器内申请 4 MiB buffer 失败的启动 warning
+- `module-config: "python cachedb iterator"`
+- `python-script: "/etc/unbound/python/block_aaaa_https.py"`
+- 默认屏蔽 `AAAA` 和 `HTTPS`：返回 `NOERROR` + 空答案（NODATA）
 - `include-toplevel: "/etc/unbound/unbound.conf.d/*.conf"`
+- `include-toplevel: "/etc/unbound/custom.conf.d/*.conf"`
 
 如需发布到公网，请自行收紧 `access-control`，避免变成开放递归解析器。
 
