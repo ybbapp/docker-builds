@@ -2,7 +2,7 @@ ARG GO_VERSION=1.26.5
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-bookworm AS build
 
-ARG SOURCE_REPOSITORY=ybbapp/headscale
+ARG SOURCE_REPOSITORY=ybbapp/headscale-edition
 ARG SOURCE_TAG=v0.29.3-home
 ARG TARGETARCH
 
