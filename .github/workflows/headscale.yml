@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  SOURCE_REPOSITORY: ybbapp/headscale-edition
+  SOURCE_REPOSITORY: ybbapp/headscale
 
 jobs:
   build:

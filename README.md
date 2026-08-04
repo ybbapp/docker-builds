@@ -7,7 +7,7 @@
 | 项目 | 镜像 | 说明 | 构建方式 | 架构 |
 |:-----|:-----|:-----|:---------|:-----|
 | [frp](https://github.com/fatedier/frp) | `ghcr.io/ybbapp/frpc`<br>`ghcr.io/ybbapp/frps` | 内网穿透客户端 / 服务端 | Release 二进制 | `amd64`, `arm64` |
-| [headscale](https://github.com/ybbapp/headscale-edition) | `ghcr.io/ybbapp/headscale` | Headscale 控制服务（支持指定上游 tag） | Dockerfile 源码编译 | `amd64`, `arm64` |
+| [headscale](https://github.com/ybbapp/headscale) | `ghcr.io/ybbapp/headscale` | Headscale 控制服务（支持指定上游 tag） | Dockerfile 源码编译 | `amd64`, `arm64` |
 | [rembg](https://github.com/danielgatis/rembg) | `ghcr.io/ybbapp/rembg` | AI 背景移除 | PyPI 安装 | `amd64`, `arm64` |
 | [sing-box](https://github.com/SagerNet/sing-box) | `ghcr.io/ybbapp/sing-box` | 通用代理平台（含 V2Ray API） | Source 编译 | `amd64`, `arm64` |
 | [systemd](./systemd) | `ghcr.io/ybbapp/systemd:debian`<br>`ghcr.io/ybbapp/systemd:alpine` | 容器化 init 系统 (systemd / OpenRC) | 官方镜像组合 | `amd64`, `arm64` |
